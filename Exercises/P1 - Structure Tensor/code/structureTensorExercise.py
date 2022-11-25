@@ -53,15 +53,17 @@ def compute_structure_tensor(image, sigma=0.5, rho=0.5, show=False):
     # local 2x2-tensor J = [[f_x ^ 2 f_x * f_y], [f_x * f_y f_y ^ 2]]
     J = np.empty((np.shape(image)[0], np.shape(image)[1], 2, 2))
     # f_x squared
-    # TODO
+    J[:, :, 0, 0] = img_gradient[:, :, 0] ** 2  #TODO
     # f_y squared
-    # TODO
+    J[:, :, 1, 1] = img_gradient[:, :, 1] ** 2  #TODO
     # f_x * f_y
-    # TODO
+    J[:, :, 1, 0] = J[:, :, 0, 1] = img_gradient[:, :, 1] * img_gradient[:, :, 0]   #TODO
 
     # relaxation step (parameter is rho)
-    # TODO: use filter_gauss to filter the tensor components
-
+    J[:, :, 0, 0] = filter_gauss(J[:, :, 0, 0], rho)    # TODO: use filter_gauss to filter the tensor components
+    J[:, :, 1, 1] = filter_gauss(J[:, :, 1, 1], rho)
+    J[:, :, 1, 0] = filter_gauss(J[:, :, 1, 0], rho)
+    J[:, :, 0, 1] = filter_gauss(J[:, :, 0, 1], rho)
     return J
 
 
@@ -72,12 +74,12 @@ def compute_gradient(image):
     img_gradient = np.empty((np.shape(image)[0], np.shape(image)[1], 2))
 
     # the filter kernel and convolution for forward differences in x direction
-    x_kernel = np.asarray([[0, 0]], dtype=np.float32)  # TODO: fix the kernel for forward differences
-    img_gradient[:, :, 0] = 0  # TODO: apply x_kernel
+    x_kernel = np.asarray([[1, -1]], dtype=np.float32)  # TODO: fix the kernel for forward differences
+    img_gradient[:, :, 0] = convolve2d(image, x_kernel, mode='same')  # TODO: apply x_kernel
 
     # the filter kernel and convolution for forward differences in y direction
-    y_kernel = np.asarray([[0], [0]], dtype=np.float32)  # TODO: fix the kernel for forward differences
-    img_gradient[:, :, 1]  # TODO: apply y_kernel
+    y_kernel = np.asarray([[1], [-1]], dtype=np.float32)  # TODO: fix the kernel for forward differences
+    img_gradient[:, :, 1] = convolve2d(image, y_kernel, mode='same') # TODO: apply y_kernel
 
     return img_gradient
 
@@ -90,6 +92,7 @@ def compute_eigenvalues(tensor):
 
     # TODO: implement the computation of the eigenvalues
     # TODO (Hint): make use of np.linalg.eig(...)
+    evs, vectors = np.linalg.eig(tensor)
 
     return evs
 
@@ -105,7 +108,14 @@ def generate_feature_masks(evs, thresh=0.005):
         for j in range(0, np.shape(evs)[1]):
 
             # TODO: analyze the eigenvalues evs, and assign corners, edges, and flat areas accordingly
-            corners[i, j] = 0.0
+            lambda1 = evs[i, j, 0]
+            lambda2 = evs[i, j, 1]
+            if lambda1 >= lambda2 and lambda2 - thresh > 0:
+                corners[i, j] = 1
+            if lambda1 - thresh < 0 and lambda1 + thresh > 0 and lambda2 - thresh < 0 and lambda2 + thresh > 0:
+                flat_areas[i, j] = 1
+            if lambda1 > lambda2 + thresh and lambda2 - thresh < 0 and lambda2 + thresh > 0 or lambda2 > lambda1 + thresh and lambda1 - thresh < 0 and lambda1 + thresh > 0:
+                straight_edges[i, j] = 1
 
     return corners, straight_edges, flat_areas
 
