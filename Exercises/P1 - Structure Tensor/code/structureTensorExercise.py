@@ -114,7 +114,7 @@ def generate_feature_masks(evs, thresh=0.005):
                 corners[i, j] = 1
             if lambda1 - thresh < 0 and lambda1 + thresh > 0 and lambda2 - thresh < 0 and lambda2 + thresh > 0:
                 flat_areas[i, j] = 1
-            if lambda1 > lambda2 + thresh and lambda2 - thresh < 0 and lambda2 + thresh > 0 or lambda2 > lambda1 + thresh and lambda1 - thresh < 0 and lambda1 + thresh > 0:
+            if lambda1 > lambda2 + thresh and lambda2 - thresh < 0 and lambda2 + thresh > 0:
                 straight_edges[i, j] = 1
 
     return corners, straight_edges, flat_areas
